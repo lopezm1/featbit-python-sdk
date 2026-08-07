@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Mapping, Optional
+from typing import Callable, Mapping, Optional
 
 from fbclient.category import Category
 from fbclient.common_types import FBEvent
@@ -124,6 +124,24 @@ class DataUpdateStatusProvider(ABC):
         """
         pass
 
+    def add_listener(self, listener: Callable[[State], None]):
+        """
+        Registers a listener for update-processing status changes.
+
+        The default implementation is a no-op so existing custom status
+        providers remain backward compatible.
+        """
+        pass
+
+    def remove_listener(self, listener: Callable[[State], None]):
+        """
+        Removes a previously registered update-status listener.
+
+        The default implementation is a no-op so existing custom status
+        providers remain backward compatible.
+        """
+        pass
+
 
 class DataStorage(ABC):
     """
@@ -161,7 +179,7 @@ class DataStorage(ABC):
         pass
 
     @abstractmethod
-    def init(self, all_data: Mapping[Category, Mapping[str, dict]], version: int = 0):
+    def init(self, all_data: Mapping[Category, Mapping[str, dict]], version: int = 0) -> bool:
         """
         Init (or re-init by data update process) the storage with the specified set of data.
         Any existing entries will be removed if the new data set's version is greater than the current version
@@ -173,7 +191,7 @@ class DataStorage(ABC):
         pass
 
     @abstractmethod
-    def upsert(self, kind: Category, key: str, item: dict, version: int = 0):
+    def upsert(self, kind: Category, key: str, item: dict, version: int = 0) -> bool:
         """
         Updates or inserts the data associated with the specified key. If an item with the same key
         already exists, it should update it only if the new item's ``version`` property is greater than the current version

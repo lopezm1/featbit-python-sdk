@@ -93,6 +93,72 @@ def test_update_state(data_updator):
     assert data_updator.current_state.state_type == StateType.INTERRUPTED
 
 
+def test_status_listener_receives_changes_and_can_be_removed(data_updator):
+    received = []
+
+    def listener(state):
+        received.append(state.state_type)
+
+    data_updator.add_listener(listener)
+    data_updator.add_listener(listener)
+    data_updator.add_listener(None)
+    data_updator.remove_listener(lambda _state: None)
+    data_updator.update_state(State.ok_state())
+    data_updator.update_state(State.interrupted_state("network", "disconnected"))
+    data_updator.remove_listener(listener)
+    data_updator.update_state(State.ok_state())
+
+    assert received == [StateType.OK, StateType.INTERRUPTED]
+
+
+def test_status_listener_exception_does_not_escape_or_block_others(data_updator):
+    received = []
+
+    def failing_listener(_state):
+        raise RuntimeError("listener failure")
+
+    data_updator.add_listener(failing_listener)
+    data_updator.add_listener(lambda state: received.append(state.state_type))
+
+    data_updator.update_state(State.ok_state())
+
+    assert received == [StateType.OK]
+    assert data_updator.current_state.state_type == StateType.OK
+
+
+def test_status_listener_preserves_concurrent_transition_order(data_updator):
+    first_callback_started = threading.Event()
+    release_first_callback = threading.Event()
+    received = []
+
+    def listener(state):
+        if state.state_type == StateType.OK:
+            first_callback_started.set()
+            assert release_first_callback.wait(1)
+        received.append(state.state_type)
+
+    data_updator.add_listener(listener)
+    first_update = threading.Thread(
+        target=data_updator.update_state,
+        args=(State.ok_state(),)
+    )
+    second_update = threading.Thread(
+        target=data_updator.update_state,
+        args=(State.interrupted_state("network", "disconnected"),)
+    )
+
+    first_update.start()
+    assert first_callback_started.wait(1)
+    second_update.start()
+    second_update.join(1)
+    release_first_callback.set()
+    first_update.join(1)
+
+    assert not first_update.is_alive()
+    assert not second_update.is_alive()
+    assert received == [StateType.OK, StateType.INTERRUPTED]
+
+
 def test_wait_for_OKState(data_updator):
     assert not data_updator.wait_for_OKState(timeout=0.1)
     data_updator.update_state(State.ok_state())

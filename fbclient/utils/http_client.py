@@ -11,8 +11,10 @@ from fbclient.interfaces import Sender
 from fbclient.utils import build_headers, log
 
 
-def build_http_factory(config: Config, headers={}):
-    return HTTPFactory(build_headers(config.env_secret, headers), config.http)
+def build_http_factory(config: Config, headers=None):
+    return HTTPFactory(build_headers(config.env_secret,
+                                     headers if headers is not None else {}),
+                       config.http)
 
 
 class HTTPFactory:
@@ -53,7 +55,8 @@ class HTTPFactory:
                                        headers=self.__headers,
                                        timeout=self.__timeout,
                                        cert_reqs=cert_reqs,
-                                       ca_certs=ca_certs)
+                                       ca_certs=ca_certs,
+                                       cert_file=self.__http_config.cert_file)
         else:
             url = urllib3.util.parse_url(proxy_url)
             if url.auth:
@@ -71,7 +74,8 @@ class HTTPFactory:
                                         proxy_headers=proxy_headers,
                                         timeout=self.__timeout,
                                         cert_reqs=cert_reqs,
-                                        ca_certs=ca_certs)
+                                        ca_certs=ca_certs,
+                                        cert_file=self.__http_config.cert_file)
 
 
 class DefaultSender(Sender):

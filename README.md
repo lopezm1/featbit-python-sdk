@@ -18,7 +18,7 @@ If you want to use your own data source, see [Offline Mode](#offline-mode).
 ## Get Started
 
 ### Installation
-install the sdk in using pip, this version of the SDK is compatible with Python 3.6 through 3.11.
+Install the SDK using pip. This version is compatible with Python 3.6 through 3.12.
 
 ```shell
 pip install fb-python-sdk
@@ -66,6 +66,29 @@ client.stop()
 
 - [Python Demo](https://github.com/featbit/featbit-samples/blob/main/samples/dino-game/demo-python/demo_python.py)
 
+### SDK reliability and live verification
+
+The repository includes a repeatable [reliability review](docs/REVIEW.md)
+covering unit tests, thread safety, memory retention, background-thread
+shutdown, public runtime exception isolation, and redundant code. Run the
+local resource audit with:
+
+```shell
+python scripts/resource_audit.py --evaluations 80000 --workers 8
+```
+
+To verify WebSocket synchronization, remote evaluation, status changes, event
+delivery, and clean shutdown against FeatBit Cloud or a self-hosted evaluation
+service, set `FEATBIT_ENV_SECRET` and run:
+
+```shell
+python scripts/live_integration_check.py
+```
+
+The live script never prints or persists the environment secret. See the
+review document for all supported environment variables and verification
+criteria.
+
 ### FBClient
 
 Applications **SHOULD instantiate a single FBClient instance** for the lifetime of the application. In the case where an application
@@ -112,6 +135,16 @@ if client.update_status_provider.wait_for_OKState():
 
 It's possible to set a timeout in seconds for the `wait_for_OKState` method. If the timeout is reached, the method will return `False` and the client will still be in an uninitialized state. If you do not specify a timeout, the method will wait indefinitely.
 
+You can also observe later connection interruptions and recoveries:
+
+```python
+def on_status_change(state):
+    print(state.state_type, state.error_track)
+
+client.update_status_provider.add_listener(on_status_change)
+# Remove it during application shutdown:
+client.update_status_provider.remove_listener(on_status_change)
+```
 
 > To check if the client is ready is optional. Even if the client is not ready, you can still evaluate feature flags, but the default value will be returned if SDK is not yet initialized.
 
@@ -136,6 +169,7 @@ if client.initialize:
     flag_value = client.variation(flag_key, user, default_value)
     # evaluate the flag value and get the detail
     detail = client.variation_detail(flag_key, user, default=None)
+    print(detail.variation, detail.variation_id, detail.reason)
 ```
 
 If you would like to get variations of all feature flags in a special environment, you can use `fbclient.client.FBClient.get_all_latest_flag_variations`, SDK will return `fbclient.common_types.AllFlagStates`, that explain the details of all feature flags. `fbclient.common_types.AllFlagStates.get()` returns the detail of a given feature flag key.
@@ -155,6 +189,10 @@ if client.initialize:
 
 > **Note**
 > If evaluation happened before the client is initialized, or you provide the wrong flag key/user for evaluation, the `variation` calls will return the default value. The `fbclient.common_types.EvalDetail` will explain the details of the latest evaluation including error reason.
+> Runtime evaluation does not raise solely because a supplied default has an
+> unsupported type. If no flag value can be produced, that default object is
+> returned unchanged and a diagnostic message is logged. Required client
+> configuration remains fail-fast during construction.
 
 ### Flag Tracking
 
