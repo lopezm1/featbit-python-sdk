@@ -302,6 +302,8 @@ class Streaming(Thread, UpdateProcessor):
         log.trace('Streaming WebSocket data: %s' % msg)  # type: ignore
         try:
             all_data = json.loads(msg)
+            if all_data.get('messageType') == 'pong':
+                return
             if not valide_all_data(all_data):
                 raise ValueError('invalid streaming data')
             if not self._on_process_data(all_data['data']) and self.__wsapp:

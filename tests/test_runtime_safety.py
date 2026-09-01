@@ -1,4 +1,5 @@
 import base64
+import json
 import queue
 import threading
 from time import sleep
@@ -74,6 +75,28 @@ def test_repeatable_task_can_be_joined_cleanly():
     task.start()
     task.stop()
     assert not task.is_alive()
+
+
+def test_streaming_ignores_pong_control_messages():
+    config = Config(FAKE_ENV_SECRET,
+                    event_url=FAKE_URL,
+                    streaming_url=FAKE_URL,
+                    offline=True)
+    storage = InMemoryDataStorage()
+    status = DataUpdateStatusProviderImpl(storage)
+    streaming = Streaming(config, NoticeBroadcater(), status, threading.Event())
+
+    class FakeWebSocket:
+        def close(self, **_kwargs):
+            raise AssertionError("pong must not close the WebSocket")
+
+    streaming._on_message(FakeWebSocket(), json.dumps({
+        "messageType": "pong",
+        "data": {},
+    }))
+
+    assert status.current_state.state_type == StateType.INITIALIZING
+    streaming.stop()
 
 
 def test_notice_broadcaster_is_safe_during_listener_churn():
