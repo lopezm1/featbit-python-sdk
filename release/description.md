@@ -17,7 +17,8 @@ version: 1.1.9
 ## Updates
 
 - support and test CPython versions 3.13 and 3.14
-- require urllib3 1.26.5 or newer for CPython 3.14 compatibility
+- align the supported Python range with 3.10 through 3.14
+- require urllib3 1.26.5 or newer and lower than 3
 - handle Python versions 3.12.x
 - make client, WebSocket, event, and notice shutdown deterministic and idempotent
 - isolate runtime event and shutdown failures from application code

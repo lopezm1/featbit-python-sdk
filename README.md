@@ -18,9 +18,9 @@ If you want to use your own data source, see [Offline Mode](#offline-mode).
 ## Get Started
 
 ### Installation
-Install the SDK using pip. This version is compatible with Python 3.6 through 3.14.
-CI is configured to test compatibility through Python 3.14, including the
-full unit suite and SDK resource-lifecycle audit.
+Install the SDK using pip. This version is compatible with Python 3.10 through 3.14.
+CI is configured to test compatibility on Linux and Windows through Python 3.14,
+including the full unit suite and SDK resource-lifecycle audit.
 Free-threaded CPython 3.14 builds are not currently tested or supported.
 
 ```shell

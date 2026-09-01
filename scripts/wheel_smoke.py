@@ -48,11 +48,12 @@ def assert_metadata(expected_version):
         assert distribution.version == expected_version
 
     package_metadata = distribution.metadata
-    assert package_metadata["Requires-Python"] == ">=3.6, <3.15"
+    assert package_metadata["Requires-Python"] == ">=3.10, <3.15"
     classifiers = package_metadata.get_all("Classifier") or []
+    assert "Programming Language :: Python :: 3.10" in classifiers
     assert "Programming Language :: Python :: 3.14" in classifiers
     requirements = distribution.requires or []
-    assert any(requirement.startswith("urllib3>=1.26.5") for requirement in requirements)
+    assert any(requirement.startswith("urllib3<3,>=1.26.5") for requirement in requirements)
     return distribution.version
 
 
