@@ -13,7 +13,8 @@ from fbclient.event_processor import NullEventProcessor
 from fbclient.notice_broadcaster import NoticeBroadcater
 from fbclient.status import DataUpdateStatusProviderImpl
 from fbclient.status_types import State, StateType
-from fbclient.streaming import Streaming
+from fbclient.streaming import Streaming, _data_to_dict
+from fbclient.category import FEATURE_FLAGS, SEGMENTS
 import fbclient.streaming as streaming_module
 from fbclient.update_processor import NullUpdateProcessor
 from fbclient.utils.http_client import build_http_factory
@@ -97,6 +98,26 @@ def test_streaming_ignores_pong_control_messages():
 
     assert status.current_state.state_type == StateType.INITIALIZING
     streaming.stop()
+
+
+def test_archived_streaming_data_retains_category_for_broadcast():
+    _, data = _data_to_dict({
+        "featureFlags": [{
+            "id": "archived-flag-id",
+            "key": "archived-flag",
+            "updatedAt": "2026-01-01T00:00:00Z",
+            "variations": [],
+            "isArchived": True,
+        }],
+        "segments": [{
+            "id": "archived-segment-id",
+            "updatedAt": "2026-01-01T00:00:00Z",
+            "isArchived": True,
+        }],
+    })
+
+    assert data[FEATURE_FLAGS]["archived-flag"]["cat"] == FEATURE_FLAGS
+    assert data[SEGMENTS]["archived-segment-id"]["cat"] == SEGMENTS
 
 
 def test_notice_broadcaster_is_safe_during_listener_churn():

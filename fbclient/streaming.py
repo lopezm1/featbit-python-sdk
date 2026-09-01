@@ -59,12 +59,16 @@ def _data_to_dict(data: dict) -> Tuple[int, dict]:
         flag['_id'] = flag['id']
         flag['id'] = flag['key']
         flag['cat'] = FEATURE_FLAGS
-        flags[flag['id']] = {'id': flag['id'], 'timestamp': flag['timestamp'], 'isArchived': True} if flag['isArchived'] else flag
+        flags[flag['id']] = ({'id': flag['id'], 'timestamp': flag['timestamp'],
+                             'isArchived': True, 'cat': FEATURE_FLAGS}
+                            if flag['isArchived'] else flag)
         version = max(version, flag['timestamp'])
     for segment in data['segments']:
         segment['timestamp'] = from_str_datetime_to_millis(segment['updatedAt'])
         segment['cat'] = SEGMENTS
-        segments[segment['id']] = {'id': segment['id'], 'timestamp': segment['timestamp'], 'isArchived': True} if segment['isArchived'] else segment
+        segments[segment['id']] = ({'id': segment['id'], 'timestamp': segment['timestamp'],
+                                   'isArchived': True, 'cat': SEGMENTS}
+                                  if segment['isArchived'] else segment)
         version = max(version, segment['timestamp'])
     return version, all_data
 
